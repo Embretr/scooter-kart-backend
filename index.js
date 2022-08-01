@@ -84,11 +84,11 @@ app.get("/allVehiclesTesting",(req, res)=>{
 })
 
 app.get('*', function(req, res){
-    res.send(':(', 404);
+    res.status(404).send(":(")
   });
 
 
-app.listen(80)
+app.listen(process.env.PORT)
 
 
 
