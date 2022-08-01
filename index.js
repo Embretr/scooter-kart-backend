@@ -83,6 +83,10 @@ app.get("/allVehiclesTesting",(req, res)=>{
     }
 })
 
+app.get('*', function(req, res){
+    res.send(':(', 404);
+  });
+
 
 app.listen(80)
 
