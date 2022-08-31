@@ -20,15 +20,15 @@ class Ridesharer {
     }
 }
 class Scooter {
-    constructor(brand, location, type,  battery, startPrice, minPrice, code, ID){
+    constructor(brand, location,  battery, startPrice, minPrice, code, ID, vehicleType){
         this.brand = brand
         this.location = location
-        this.type = type
         this.battery = battery
         this.startPrice = startPrice
         this.minPrice = minPrice 
         this.code = code
         this.ID = ID
+        this.vehicleType = vehicleType
     }
 }
 
@@ -40,10 +40,10 @@ app.get("/allVehicles",async (req, res)=>{
         const allscooters = []
 
         var tierApiKey = fs.readFileSync('tierApiKey.txt', 'utf8')
-        const tier = new Ridesharer("https://platform.tier-services.io/v1", {"X-Api-Key":tierApiKey.toString()})
+        const tier = new Ridesharer("https://platform.tier-services.io/v2", {"X-Api-Key":tierApiKey.toString()})
         await tier.getAllBikes("/vehicle?zoneId=OSLO").then(resp=>{
             for (x of resp.data.data){
-                allscooters.push(new Scooter("tier", {lat:x.attributes.lat, lng:x.attributes.lng}, x.type, x.attributes.batteryLevel, 10, 3, x.attributes.code.toString(), x.id))
+                allscooters.push(new Scooter("tier", {lat:x.attributes.lat, lng:x.attributes.lng}, x.attributes.batteryLevel, 10, 3, x.attributes.code.toString(), x.id,  x.attributes.vehicleType=="escooter"?"scooter":"bike"))
             }
         })
         var boltApiKey = fs.readFileSync("boltApiKey.txt", "utf8")
@@ -51,7 +51,7 @@ app.get("/allVehicles",async (req, res)=>{
         await bolt.getAllBikes("/categoriesOverview?version=CI.58.0&deviceId=6696e189-8b25-445c-b167-2d904f569734&deviceType=iphone&device_name=iPhone13,2&device_os_version=iOS15.4.1&language=en&lat=59.920413&lng=10.717425").then(resp=>{
             for (x of resp.data.data.categories){
                 for (y of x.vehicles){
-                    allscooters.push(new Scooter("bolt", {lat:y.lat, lng: y.lng}, y.type, y.charge, 0, 3, y.name, y.id.toString()))
+                    allscooters.push(new Scooter("bolt", {lat:y.lat, lng: y.lng}, y.charge, 8, 3, y.name, y.id.toString(), y.type=="scooter"?"scooter":"bike"))
                 }
             }
         })
@@ -64,7 +64,7 @@ app.get("/allVehicles",async (req, res)=>{
         const voi = new Ridesharer("https://api.voiapp.io/v2", {"x-access-token":sessionKey})
         await voi.getAllBikes("/rides/vehicles?zone_id=27").then(resp=>{
             for (x of resp.data.data.vehicle_groups[0].vehicles){
-                allscooters.push(new Scooter("voi", x.location, x.category, x.battery, 10, 3, x.short, x.id))
+                allscooters.push(new Scooter("voi", x.location, x.battery, 10, 3, x.short, x.id, x.category=="scooter"?"scooter":"bike"))
             }
         })
         fs.writeFileSync("vehicleMap.json", JSON.stringify({data:allscooters}))
@@ -72,6 +72,7 @@ app.get("/allVehicles",async (req, res)=>{
     res.sendFile(path.join(__dirname,'vehicleMap.json'))
     } catch (error) {
         console.log(error)
+        res.status(404).send('what???')
     }
 })
 
